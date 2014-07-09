@@ -177,7 +177,6 @@ Liszt.prototype.showSubject = function(subject) { return this.show('subject', su
  */
 
 Liszt.prototype.show = function(field, value) {
-    console.log(this.fields.indexOf(field).toString());
     this.container.innerHTML = '';
 
     if ( value === 'all' ) {
