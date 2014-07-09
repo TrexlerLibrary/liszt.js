@@ -94,7 +94,12 @@ Liszt.prototype.buildLetterMenu = function(selector, classname) {
         ;
 
     allA.textContent = '[view all]';
-    allA.href = './';
+    allA.href = '#all';
+    allA.onclick = function(e) {
+        e.preventDefault();
+        document.location.hash = '#all';
+        self.reset();
+    }
     
     all.appendChild(allA);
     ul.appendChild(all);
@@ -137,7 +142,8 @@ Liszt.prototype.buildSubjectMenu = function(selector, classname) {
     all.selected = true;
     all.onclick = function(e) { 
         e.preventDefault();
-        document.location.href = './';
+        document.location.hash = '#all';
+        self.reset();
     }
 
     sel.className = classname || '';
@@ -173,6 +179,11 @@ Liszt.prototype.showSubject = function(subject) { return this.show('subject', su
 Liszt.prototype.show = function(field, value) {
     console.log(this.fields.indexOf(field).toString());
     this.container.innerHTML = '';
+
+    if ( value === 'all' ) {
+        this.reset();
+        return;
+    }
 
     var okay = this.databases.filter(function(db) {
         if ( field === 'letter' ) {
