@@ -1,9 +1,10 @@
 /**
  *  Liszt is a vanilla js way to gain back the filtering
  *  options for our Databases A-Z page that we lost when
- *  making it a static page.
+ *  making it a static page (as opposed to a database querying
+ *  app).
  *
- *  Adam Malantonio <amalantonio@muhlenberg.edu>, 2014
+ *  Adam Malantonio <amalantonio@muhlenberg.edu>, 2014-2015
  *  MIT License; do what thou wilt.
  */
 
@@ -18,16 +19,19 @@
 
 var Liszt = function (selector) {
     selector = selector || '.dbaz';
-    var self = this;
+    var self = this
+      , i
+      ;
 
     self.container = document.getElementsByTagName('tbody')[0];
+    self.captionEl = document.querySelector('table caption');
     self.els = document.querySelectorAll(selector);
     self.databases = [];
     self.letters   = []; // master list of letters
     self.subjects  = []; // master list of subjects
     self.fields    = ['letter', 'subject'];
 
-    for ( var i = 0; i < self.els.length; i++ ) {
+    for ( i = 0; i < self.els.length; i++ ) {
         var name   = self.els[i].getElementsByTagName('a')[0].textContent
           , subs   = self.els[i].dataset.subject
           , letter = name.slice(0,1).toLowerCase()
@@ -38,17 +42,12 @@ var Liszt = function (selector) {
         }
 
         subs = subs ? subs.toLowerCase().split(/,\s/) : [];
-        subs.forEach(function(s) {
-                s = s.replace(' ', '-');
-                if ( self.subjects.indexOf(s) === -1 ) {
-                    self.subjects.push(s);
-                }
-        });
+        subs.forEach(function(s) { addUniqueToArray(s.replace(' ', '-'), self.subjects); });
 
         self.databases.push({
-            'name': name, 
+            'name': name,
             'subjects': subs,
-            'letter': letter, 
+            'letter': letter,
             'element': self.els[i]
         });    
     }
@@ -56,6 +55,24 @@ var Liszt = function (selector) {
     self.subjects.sort(function(a,b) {
         return a.toLowerCase() > b.toLowerCase();
     });
+};
+
+function addUniqueToArray(item, arr) {
+    if ( arr.indexOf(item) === -1 ) {
+        arr.push(item);
+    }
+}
+
+/**
+ *  adds html to caption element, but doesn't throw
+ *  an error if no caption element exists
+ */
+
+Liszt.prototype.addCaption = function addCaption(html) {
+    var self = this;
+    if ( self.captionEl ) {
+        self.captionEl.innerHTML = html;
+    }
 }
 
 /**
@@ -65,7 +82,7 @@ var Liszt = function (selector) {
  *
  */
 
-Liszt.prototype.buildLetterMenu = function(selector, classname) {
+Liszt.prototype.buildLetterMenu = function buildLetterMenu(selector, classname) {
     selector = selector || '.dbaz-menu';
     var el = document.querySelector(selector)
       , ul = document.createElement('ul')
@@ -90,7 +107,7 @@ Liszt.prototype.buildLetterMenu = function(selector, classname) {
     }
 
     var all  = document.createElement('li')
-      , allA = document.createElement('a');
+      , allA = document.createElement('a')
         ;
 
     allA.textContent = '[view all]';
@@ -99,14 +116,14 @@ Liszt.prototype.buildLetterMenu = function(selector, classname) {
         e.preventDefault();
         document.location.hash = '#all';
         self.reset();
-    }
+    };
     
     all.appendChild(allA);
     ul.appendChild(all);
 
     ul.className = classname || '';
     el.appendChild(ul);
-}
+};
 
 /**
  *  constructs a `<select>` menu of options
@@ -114,7 +131,7 @@ Liszt.prototype.buildLetterMenu = function(selector, classname) {
  *
  */
 
-Liszt.prototype.buildSubjectMenu = function(selector, classname) {
+Liszt.prototype.buildSubjectMenu = function buildSubjectMenu(selector, classname) {
     selector = selector || '.dbaz-menu';
     var el = document.querySelector(selector)
       , sel = document.createElement('select')
@@ -144,39 +161,57 @@ Liszt.prototype.buildSubjectMenu = function(selector, classname) {
         e.preventDefault();
         document.location.hash = '#all';
         self.reset();
-    }
+    };
 
     sel.className = classname || '';
     sel.insertBefore(all, sel.firstChild);
     el.appendChild(sel);
-}
+};
 
 /**
  *  clears out the redrawn table and puts all of the initial
- *  elements back into place
- *
+ *  elements back into place (and adds caption)
  */
 
-Liszt.prototype.reset = function() {
+Liszt.prototype.reset = function reset() {
+    var caption = 'Showing all databases';
+
     while ( this.container.firstChild ) {
         this.container.removeChild(this.container.firstChild);
     }
 
+    this.addCaption(caption);
+
     for ( var i = 0; i < this.databases.length; i++ ) {
         this.container.appendChild(this.databases[i].element);
     }
-}
+};
 
-// aliases for show, to display either based on letter or subject
-Liszt.prototype.showLetter  = function(letter)  { return this.show('letter', letter);   }
-Liszt.prototype.showSubject = function(subject) { return this.show('subject', subject.replace('-', ' ')); }
+// aliases for show, to display either based on letter or subject + add appropriate captions
+Liszt.prototype.showLetter  = function showLetter(letter)  { 
+    var caption = 'Showing databases that begin with <strong>' + letter.toUpperCase() + '</strong>';
+
+    this.addCaption(caption);
+    return this.show('letter', letter);
+};
+
+Liszt.prototype.showSubject = function showSubject(subject) {
+    var sub = subject.replace('-', ' ')
+      , sub_nice = sub.split(' ')
+                      .map(function(w) { return w.slice(0,1).toUpperCase() + w.slice(1); })
+                      .join(' ')
+      , caption = 'Showing databases that cover <strong>' + sub_nice + '</strong>';
+
+    this.addCaption(caption);
+    return this.show('subject', sub);
+};
 
 /**
  *  append elements that match `field` on `value` to the
  *  Liszt container
  */
 
-Liszt.prototype.show = function(field, value) {
+Liszt.prototype.show = function show(field, value) {
     this.container.innerHTML = '';
 
     if ( value === 'all' ) {
@@ -195,4 +230,4 @@ Liszt.prototype.show = function(field, value) {
     for ( var i = 0; i < okay.length; i++ ) {
         this.container.appendChild(okay[i].element);
     }
-}
+};
